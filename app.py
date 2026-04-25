@@ -2,15 +2,11 @@ from flask import Flask, render_template, request
 import os
 import cv2
 from ultralytics import YOLO
-from gtts import gTTS
 
 app = Flask(__name__)
 
 UPLOAD_FOLDER = "uploads"
-AUDIO_FOLDER = "static/audio"
-
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(AUDIO_FOLDER, exist_ok=True)
 
 # Load YOLO model
 model = YOLO("yolov8n.pt")
@@ -28,20 +24,9 @@ def index():
             # Analyze video
             traffic_level = analyze_video(filepath)
 
-            # Generate voice
-            text = f"Traffic is {traffic_level}"
-            audio_path = os.path.join(AUDIO_FOLDER, "voice.mp3")
-
-            tts = gTTS(text=text, lang="en")
-            tts.save(audio_path)
-
-            # ✅ IMPORTANT FIX (browser path)
-            audio_file = "/static/audio/voice.mp3"
-
             return render_template(
                 "index.html",
-                result=traffic_level,
-                audio_file=audio_file
+                result=traffic_level
             )
 
     return render_template("index.html")
@@ -51,7 +36,7 @@ def analyze_video(path):
     cap = cv2.VideoCapture(path)
 
     vehicle_count = 0
-    frame_limit = 5   # very small → prevents crash
+    frame_limit = 5   # keep very small for Render
     processed = 0
 
     while processed < frame_limit:
@@ -59,7 +44,7 @@ def analyze_video(path):
         if not ret:
             break
 
-        # Resize (reduce memory)
+        # Resize (low memory)
         frame = cv2.resize(frame, (224, 224))
 
         # YOLO detection (light)
