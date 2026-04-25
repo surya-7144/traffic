@@ -1,71 +1,59 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Traffic AI Detector</title>
 
     <style>
         body {
             margin: 0;
             font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #4facfe, #00f2fe);
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            background: linear-gradient(to right, #1e3c72, #2a5298);
+            color: white;
+            text-align: center;
         }
 
         .container {
-            background: white;
-            padding: 40px;
-            border-radius: 15px;
-            text-align: center;
-            width: 400px;
-            box-shadow: 0px 10px 30px rgba(0,0,0,0.2);
+            margin-top: 100px;
         }
 
         h1 {
-            margin-bottom: 20px;
-            color: #333;
+            font-size: 40px;
+        }
+
+        form {
+            margin-top: 30px;
         }
 
         input[type="file"] {
             padding: 10px;
-            border: 2px dashed #4facfe;
-            width: 100%;
-            border-radius: 10px;
-            cursor: pointer;
+            background: white;
+            color: black;
+            border-radius: 5px;
         }
 
-        #status {
-            margin-top: 15px;
-            font-weight: bold;
-            color: #555;
+        button {
+            padding: 10px 20px;
+            background: #00c6ff;
+            border: none;
+            color: white;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        button:hover {
+            background: #0072ff;
         }
 
         .result {
+            margin-top: 30px;
+            font-size: 24px;
+        }
+
+        audio {
             margin-top: 20px;
-            font-size: 20px;
-            font-weight: bold;
-            color: #222;
-        }
-
-        .loading {
-            margin-top: 15px;
-            display: none;
-        }
-
-        .spinner {
-            border: 5px solid #eee;
-            border-top: 5px solid #4facfe;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: auto;
-        }
-
-        @keyframes spin {
-            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
@@ -75,42 +63,47 @@
 <div class="container">
     <h1>🚦 Traffic AI Detector</h1>
 
-    <form id="uploadForm" method="POST" enctype="multipart/form-data">
-        <input type="file" name="file" id="fileInput" required>
+    <p>Upload a short video (3–5 seconds)</p>
+
+    <form method="POST" enctype="multipart/form-data">
+        <input type="file" name="file" accept="video/*" required>
+        <button type="submit">Upload</button>
     </form>
 
-    <p id="status">Select a video to analyze</p>
-
-    <div class="loading" id="loading">
-        <div class="spinner"></div>
-        <p>Analyzing traffic... 🤖</p>
-    </div>
-
     {% if result %}
-        <div class="result">{{ result }}</div>
+        <div class="result">
+            <p>Traffic is <b>{{ result }}</b></p>
+        </div>
+    {% endif %}
 
-        <audio id="audioPlayer" autoplay>
-            <source src="{{ audio }}" type="audio/mpeg">
+    {% if audio_file %}
+        <audio id="voicePlayer" controls>
+            <source src="{{ audio_file }}" type="audio/mpeg">
         </audio>
 
+        <br>
+
+        <button onclick="playAudio()">🔊 Play Voice</button>
+
         <script>
-            document.getElementById("audioPlayer").play();
+            function playAudio() {
+                var audio = document.getElementById("voicePlayer");
+                audio.play();
+            }
+
+            // Try autoplay
+            window.onload = function() {
+                var audio = document.getElementById("voicePlayer");
+                if (audio) {
+                    audio.play().catch(() => {
+                        console.log("Autoplay blocked");
+                    });
+                }
+            }
         </script>
     {% endif %}
+
 </div>
-
-<script>
-    const fileInput = document.getElementById("fileInput");
-    const form = document.getElementById("uploadForm");
-    const status = document.getElementById("status");
-    const loading = document.getElementById("loading");
-
-    fileInput.addEventListener("change", function() {
-        status.innerText = "Uploading...";
-        loading.style.display = "block";
-        form.submit(); // auto submit
-    });
-</script>
 
 </body>
 </html>
