@@ -48,7 +48,7 @@ def analyze_video(path):
     cap = cv2.VideoCapture(path)
 
     vehicle_count = 0
-    frame_limit = 10   # ✅ ONLY 10 frames (very important)
+    frame_limit = 5   # 🔥 VERY SMALL (important)
     processed = 0
 
     while processed < frame_limit:
@@ -56,17 +56,15 @@ def analyze_video(path):
         if not ret:
             break
 
-        # Resize frame (reduce memory)
-        frame = cv2.resize(frame, (320, 240))
+        # 🔽 make it very small
+        frame = cv2.resize(frame, (224, 224))
 
-        # YOLO detection
-        results = model(frame, imgsz=320)
+        # ⚡ faster YOLO
+        results = model(frame, imgsz=224, conf=0.3)
 
         for r in results:
             for box in r.boxes:
                 cls = int(box.cls[0])
-
-                # vehicle classes (car, bike, bus, truck)
                 if cls in [2, 3, 5, 7]:
                     vehicle_count += 1
 
@@ -74,10 +72,9 @@ def analyze_video(path):
 
     cap.release()
 
-    # Decide traffic level
-    if vehicle_count < 10:
+    if vehicle_count < 5:
         return "Low"
-    elif vehicle_count < 30:
+    elif vehicle_count < 15:
         return "Medium"
     else:
         return "High"
