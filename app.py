@@ -35,10 +35,13 @@ def index():
             tts = gTTS(text=text, lang="en")
             tts.save(audio_path)
 
+            # ✅ IMPORTANT FIX (browser path)
+            audio_file = "/static/audio/voice.mp3"
+
             return render_template(
                 "index.html",
                 result=traffic_level,
-                audio_file=audio_path
+                audio_file=audio_file
             )
 
     return render_template("index.html")
@@ -48,7 +51,7 @@ def analyze_video(path):
     cap = cv2.VideoCapture(path)
 
     vehicle_count = 0
-    frame_limit = 5   # 🔥 VERY SMALL (important)
+    frame_limit = 5   # very small → prevents crash
     processed = 0
 
     while processed < frame_limit:
@@ -56,15 +59,17 @@ def analyze_video(path):
         if not ret:
             break
 
-        # 🔽 make it very small
+        # Resize (reduce memory)
         frame = cv2.resize(frame, (224, 224))
 
-        # ⚡ faster YOLO
+        # YOLO detection (light)
         results = model(frame, imgsz=224, conf=0.3)
 
         for r in results:
             for box in r.boxes:
                 cls = int(box.cls[0])
+
+                # vehicle classes
                 if cls in [2, 3, 5, 7]:
                     vehicle_count += 1
 
