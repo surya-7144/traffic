@@ -60,20 +60,25 @@
         <div class="result">
             Traffic is <b>{{ result }}</b>
         </div>
-    {% endif %}
 
-    {% if audio_file %}
-        <audio id="voicePlayer" controls>
-            <source src="{{ audio_file }}" type="audio/mpeg">
-        </audio>
+        <br>
 
-        <br><br>
-
-        <button onclick="playAudio()">🔊 Play Voice</button>
+        <button onclick="speak()">🔊 Speak</button>
 
         <script>
-            function playAudio() {
-                document.getElementById("voicePlayer").play();
+            function speak() {
+                var text = "Traffic is {{ result }}";
+                var speech = new SpeechSynthesisUtterance(text);
+                speech.lang = "en-US";
+                speech.rate = 1;
+                speech.pitch = 1;
+
+                window.speechSynthesis.speak(speech);
+            }
+
+            // Auto speak when page loads
+            window.onload = function() {
+                speak();
             }
         </script>
     {% endif %}
