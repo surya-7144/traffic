@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect
+from flask import Flask, render_template, request
 import os
 import cv2
 from ultralytics import YOLO
@@ -12,72 +12,76 @@ AUDIO_FOLDER = "static/audio"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(AUDIO_FOLDER, exist_ok=True)
 
-app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-
+# Load YOLO model
 model = YOLO("yolov8n.pt")
 
-VEHICLE_CLASSES = [2, 3, 5, 7]
 
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "POST":
         file = request.files["file"]
 
-        if file.filename == "":
-            return redirect(request.url)
+        if file:
+            filepath = os.path.join(UPLOAD_FOLDER, file.filename)
+            file.save(filepath)
 
-        filepath = os.path.join(UPLOAD_FOLDER, file.filename)
-        file.save(filepath)
+            # Analyze video
+            traffic_level = analyze_video(filepath)
 
-        traffic_level = analyze_video(filepath)
-        audio_file = generate_voice(traffic_level)
+            # Generate voice
+            text = f"Traffic is {traffic_level}"
+            audio_path = os.path.join(AUDIO_FOLDER, "voice.mp3")
 
-        return render_template("index.html",
-                               result=traffic_level,
-                               audio=audio_file)
+            tts = gTTS(text=text, lang="en")
+            tts.save(audio_path)
 
-    return render_template("index.html", result=None, audio=None)
+            return render_template(
+                "index.html",
+                result=traffic_level,
+                audio_file=audio_path
+            )
+
+    return render_template("index.html")
 
 
 def analyze_video(path):
     cap = cv2.VideoCapture(path)
 
-    total = 0
-    frames = 0
+    vehicle_count = 0
+    frame_limit = 10   # ✅ ONLY 10 frames (very important)
+    processed = 0
 
-    while True:
+    while processed < frame_limit:
         ret, frame = cap.read()
         if not ret:
             break
 
-        results = model(frame)
-        classes = results[0].boxes.cls.tolist()
+        # Resize frame (reduce memory)
+        frame = cv2.resize(frame, (320, 240))
 
-        count = sum(1 for c in classes if int(c) in VEHICLE_CLASSES)
+        # YOLO detection
+        results = model(frame, imgsz=320)
 
-        total += count
-        frames += 1
+        for r in results:
+            for box in r.boxes:
+                cls = int(box.cls[0])
+
+                # vehicle classes (car, bike, bus, truck)
+                if cls in [2, 3, 5, 7]:
+                    vehicle_count += 1
+
+        processed += 1
 
     cap.release()
 
-    avg = total / max(frames, 1)
-
-    if avg < 3:
-        return "Traffic is Low"
-    elif avg < 7:
-        return "Traffic is Medium"
+    # Decide traffic level
+    if vehicle_count < 10:
+        return "Low"
+    elif vehicle_count < 30:
+        return "Medium"
     else:
-        return "Traffic is Heavy"
-
-
-def generate_voice(text):
-    path = os.path.join(AUDIO_FOLDER, "voice.mp3")
-
-    tts = gTTS(text=text, lang="en")
-    tts.save(path)
-
-    return path
+        return "High"
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    app.run(debug=True)
