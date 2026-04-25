@@ -36,39 +36,33 @@ def analyze_video(path):
     cap = cv2.VideoCapture(path)
 
     vehicle_count = 0
-    frame_limit = 5   # keep very small for Render
-    processed = 0
 
-    while processed < frame_limit:
+    # 🔥 ONLY PROCESS 2 FRAMES (VERY LIGHT)
+    for _ in range(2):
         ret, frame = cap.read()
         if not ret:
             break
 
-        # Resize (low memory)
-        frame = cv2.resize(frame, (224, 224))
+        # 🔥 VERY SMALL SIZE
+        frame = cv2.resize(frame, (160, 160))
 
-        # YOLO detection (light)
-        results = model(frame, imgsz=224, conf=0.3)
+        # 🔥 FAST YOLO
+        results = model(frame, imgsz=160, conf=0.4)
 
         for r in results:
             for box in r.boxes:
                 cls = int(box.cls[0])
-
-                # vehicle classes
                 if cls in [2, 3, 5, 7]:
                     vehicle_count += 1
 
-        processed += 1
-
     cap.release()
 
-    if vehicle_count < 5:
+    if vehicle_count < 3:
         return "Low"
-    elif vehicle_count < 15:
+    elif vehicle_count < 8:
         return "Medium"
     else:
         return "High"
-
 
 if __name__ == "__main__":
     app.run(debug=True)
